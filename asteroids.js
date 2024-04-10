@@ -3,7 +3,10 @@ const SHIP_SIZE = 30 // in pixels
 const TURN_SPEED = 360 // degrees per second
 const SHIP_THRUST = 5 // acceleration of the ship in pixels per second per second
 const FRICTION = 0.7 // fraction coefficient of space (0 = no friction, 1 = lots of friction)
-
+const ROIDS_NUM = 3 // starting number of asteroids
+const ROIDS_SPD = 50 // max-starting speed of asteroids in pixels per second
+const ROIDS_SIZE = 100 // starting size of asteroids in pixels
+const ROIDS_VERT = 10 // number of vertices on each asteroid
 let canv, ctx, ship
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -48,6 +51,21 @@ function Keydown(e) {
   }
 }
 
+// set up asteroid
+const roids = []
+createAsteroidBelt()
+
+function createAsteroidBelt() {
+  roids = []
+  let x, y
+
+  for (let i = 0; i < ROIDS_NUM; i++) {
+    x = Math.floor(Math.random() * canv.width)
+    y = Math.floor(Math.random() * canv.height)
+    roids.push(newAsteroid(x, y))
+  }
+}
+
 function Keyup(e) {
   switch (e.keyCode) {
     case 37: // left arrow (stop rotating left)
@@ -60,6 +78,19 @@ function Keyup(e) {
       ship.rot = 0
       break
   }
+}
+
+const newAsteroid = (x, y) => {
+  let roid = {
+    x: x,
+    y: y,
+    xv: ((Math.random() * ROIDS_SPD) / FPS) * (Math.random() < 0.5 ? 1 : -1),
+    yv: ((Math.random() * ROIDS_SPD) / FPS) * (Math.random() < 0.5 ? 1 : -1),
+    r: ROIDS_SIZE / 2,
+    a: Math.random() * Math.PI * 2, // in radians
+    vert: Math.floor(Math.random() * (ROIDS_VERT + 1) + ROIDS_VERT / 2),
+  }
+  return roid
 }
 
 function update() {
@@ -128,6 +159,16 @@ function update() {
 
   ctx.closePath()
   ctx.stroke()
+
+  // draw the asteroids
+  ctx.strokeStyle = 'slategrey'
+  ctx.lineWidth = SHIP_SIZE / 20
+  for (let i = 0; i < roids.length; i++) {
+    // draw a path
+    // draw a polygon
+    // move the asteroid
+    // handle edge of screen
+  }
 
   // rotate the ship
   ship.a += ship.rot
