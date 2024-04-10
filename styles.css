@@ -1,0 +1,9 @@
+html {
+  box-sizing: border-box;
+  background-color: darkslategray;
+}
+
+canvas {
+  width: 1200px;
+  height: 800px;
+}
