@@ -14,19 +14,23 @@ function SetupCanvas() {
   ctx.fillRect(0, 0, canvas.width, canvas.height)
   document.body.addEventListener('keydown', function (e) {
     keys[e.key] = true
+    ship.movingForward = true
+    console.log('Key pressed:', e.key)
   })
-  document.body.addEventListener('keydown', function (e) {
+  document.body.addEventListener('keyup', function (e) {
     keys[e.key] = false
+    ship.movingForward = false
+    console.log('Key unpressed:', e.key)
   })
+  canvas.focus()
   Render()
 }
 
 class Ship {
   constructor() {
     this.visible = true
-    this.x = canvas.width / 2
-    this.y = canvas.height / 2
-    this.movingForward = false
+    this.x = canvasWidth / 2
+    this.y = canvasHeight / 2
     this.speed = 0.1
     this.velx = 0
     this.vely = 0
@@ -40,43 +44,72 @@ class Ship {
     this.angle += this.rotateSpeed * dir
   }
   Update() {
-    // check if ship is moving
+    // console.log('Updating ship...')
+    // console.log('this.movingForward:', this.movingForward)
     let radians = (this.angle / Math.PI) * 180
+
     if (this.movingForward) {
       this.velx += Math.cos(radians) * this.speed
       this.vely += Math.sin(radians) * this.speed
+      console.log('Ship velocity X:', this.velx)
+      console.log('Ship velocity Y:', this.vely)
     }
-    // check if ship is out of bounds
-    if (this.x < this.radius) {
-      this.x = canvas.width
+
+    // Update ship position based on velocity
+    this.x += this.velx
+    this.y += this.vely
+
+    // Wrap around the canvas if ship goes out of bounds
+    if (this.x > canvas.width + this.radius) {
+      this.x = -this.radius
+    } else if (this.x < -this.radius) {
+      this.x = canvas.width + this.radius
     }
-    if (this.x < this.width) {
-      this.x = this.radius
+    if (this.y > canvas.height + this.radius) {
+      this.y = -this.radius
+    } else if (this.y < -this.radius) {
+      this.y = canvas.height + this.radius
     }
-    if (this.y < this.radius) {
-      this.y = canvas.height
-    }
-    if (this.y < this.height) {
-      this.y = canvas.radius
-    }
+
+    // Apply friction to slow down the ship
     this.velx *= 0.99
     this.vely *= 0.99
-    this.x -= this.velx
-    this.y -= this.vely
   }
   Draw() {
     ctx.strokeStyle = this.strokeColor
     ctx.beginPath()
-    let vertAngle = Math.PI / 2 / 3
-    let radians = (this.angle / Math.PI) * 180
-    for (let i = 0; i < 3; i++) {
-      ctx.lineTo(
-        this.x + this.radius * Math.cos(i * vertAngle + radians),
-        this.y + this.radius * Math.sin(i * vertAngle + radians)
-      )
-    }
+    let angle = this.angle
+    let x = this.x
+    let y = this.y
+    ctx.moveTo(
+      x + this.radius * Math.cos(angle),
+      y + this.radius * Math.sin(angle)
+    )
+    ctx.lineTo(
+      x + this.radius * Math.cos(angle - (Math.PI * 2) / 3),
+      y + this.radius * Math.sin(angle - (Math.PI * 2) / 3)
+    )
+    ctx.lineTo(
+      x + this.radius * Math.cos(angle + (Math.PI * 2) / 3),
+      y + this.radius * Math.sin(angle + (Math.PI * 2) / 3)
+    )
+    ctx.closePath()
+    ctx.stroke()
   }
 }
 
 let ship = new Ship()
-function Render() {}
+function Render() {
+  ship.movingForward = keys[87]
+  if (keys[68]) {
+    console.log(keys[68])
+    ship.Rotate(1)
+  }
+  if (keys[65]) {
+    ship.Rotate(-1)
+  }
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+  ship.Update()
+  ship.Draw()
+  requestAnimationFrame(Render)
+}
