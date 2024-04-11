@@ -3,6 +3,9 @@ let ctx
 let canvasWidth = 1400
 let canvasHeight = 1000
 let keys = []
+let ship = new Ship()
+let bullets = []
+let asteroids = []
 
 document.addEventListener('DOMContentLoaded', SetupCanvas)
 
@@ -13,7 +16,7 @@ function SetupCanvas() {
   canvas.height = canvasHeight
   ctx.fillStyle = 'black'
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-
+  ship = new Ship()
   document.body.addEventListener('keydown', function (e) {
     keys[e.key] = true
   })
@@ -37,6 +40,8 @@ class Ship {
     this.radius = 15
     this.angle = 0
     this.strokeColor = 'white'
+    this.noseX = canvasWidth / 2 + 15
+    this.noseY = canvasHeight / 2
   }
   Rotate(dir) {
     this.angle += this.rotateSpeed * dir
@@ -79,8 +84,9 @@ class Ship {
     ctx.beginPath()
     // Angle between vertices of the ship
     let vertAngle = (Math.PI * 2) / 3
-
     let radians = (this.angle / Math.PI) * 180
+    this.noseX = this.x - this.radius * Math.cos(radians)
+    this.noseY = this.y - this.radius * Math.sin(radians)
 
     for (let i = 0; i < 3; i++) {
       ctx.lineTo(
@@ -93,8 +99,75 @@ class Ship {
   }
 }
 
-let ship = new Ship()
+class Bullet {
+  constructor(angle) {
+    this.visible = true
+    this.x = ship.noseX
+    this.y = ship.noseY
+    this.angle = angle
+    this.height = 4
+    this.width = 4
+    this.speed = 5
+    this.velX = 0
+    this.velY = 0
+  }
 
+  Update() {
+    let radians = (this.angle / Math.PI) * 180
+    this.x -= this.speed * Math.cos(radians)
+    this.y -= this.speed * Math.sin(radians)
+  }
+
+  Draw() {
+    ctx.fillStyle = 'white'
+    ctx.fillRect(this.x, this.y, this.width, this.height)
+  }
+}
+
+class Asteroid {
+  constructor(x, y) {
+    this.visible = true
+    this.x = Math.floor(Math.random() * canv.width)
+    this.y = Math.floor(Math.random() * canv.height)
+    this.speed = 1
+    this.radius = 50
+    this.angle = Math.floor(Math.random() * 359)
+    this.strokeColor = 'white'
+  }
+
+  Update() {
+    let radians = (this.angle / Math.PI) * 180
+    this.x += Math.cos(radians) * this.speed
+    this.y += Math.sin(radians) * this.speed
+
+    if (this.x < this.radius) {
+      this.x = canvas.width
+    }
+    if (this.x > canvas.width) {
+      this.x = this.radius
+    }
+    if (this.y < this.radius) {
+      this.y = canvas.height
+    }
+    if (this.y > canvas.height) {
+      this.y = this.radius
+    }
+  }
+
+  Draw() {
+    ctx.beginPath()
+    let vertAngle = (Math.PI * 2) / 6
+    let radians = (this.angle / Math.PI) * 180
+    for (let i = 0; i < 6; i++) {
+      ctx.lineTo(
+        this.x - this.radius * Math.cos(vertAngle * i + radians),
+        this.y - this.radius * Math.sin(vertAngle * i + radians)
+      )
+    }
+    ctx.closePath()
+    ctx.stroke()
+  }
+}
 function Render() {
   // Check if the ship is moving forward
   ship.movingForward = keys[87]
