@@ -8,6 +8,8 @@ let bullets = []
 let asteroids = []
 let score = 0
 let lives = 3
+let highScore
+let localStorageName = 'HighScore'
 
 document.addEventListener('DOMContentLoaded', SetupCanvas)
 
@@ -24,17 +26,27 @@ function SetupCanvas() {
     asteroids.push(new Asteroid())
   }
 
-  document.body.addEventListener('keydown', function (e) {
-    keys[e.key] = true
-  })
-  document.body.addEventListener('keyup', function (e) {
-    keys[e.key] = false
-    if (e.key) {
-      bullets.push(new Bullet(ship.angle))
-    }
-  })
+  document.body.addEventListener('keydown', HandleKeyDown)
+  document.body.addEventListener('keyup', HandleKeyUp)
+
+  if (localStorage.getItem(localStorageName) == null) {
+    highScore = 0
+  } else {
+    highScore = localStorage.getItem(localStorageName)
+  }
 
   Render()
+}
+
+// handle keydown and keyup
+function HandleKeyDown(e) {
+  keys[e.key] = true
+}
+function HandleKeyUp(e) {
+  keys[e.key] = false
+  if (e.key === 32) {
+    bullets.push(new Bullet(ship.angle))
+  }
 }
 
 class Ship {
@@ -46,7 +58,7 @@ class Ship {
     this.speed = 0.1
     this.velX = 0
     this.velY = 0
-    this.rotateSpeed = 0.004
+    this.rotateSpeed = 0.001
     this.radius = 15
     this.angle = 0
     this.strokeColor = 'white'
@@ -124,8 +136,8 @@ class Bullet {
 
   Update() {
     let radians = (this.angle / Math.PI) * 180
-    this.x -= this.speed * Math.cos(radians)
-    this.y -= this.speed * Math.sin(radians)
+    this.x -= Math.cos(radians) * this.speed
+    this.y -= Math.sin(radians) * this.speed
   }
 
   Draw() {
@@ -137,8 +149,8 @@ class Bullet {
 class Asteroid {
   constructor(x, y, radius, level, collisionRadius) {
     this.visible = true
-    this.x = x || Math.floor(Math.random() * canvas.width)
-    this.y = y || Math.floor(Math.random() * canvas.height)
+    this.x = x || Math.floor(Math.random() * canvasWidth)
+    this.y = y || Math.floor(Math.random() * canvasHeight)
     this.speed = 3
     this.radius = radius || 50
     this.angle = Math.floor(Math.random() * 359)
@@ -185,9 +197,11 @@ function CircleCollision(p1x, p1y, r1, p2x, p2y, r2) {
   let radiusSum
   let xDiff
   let yDiff
+
   radiusSum = r1 + r2
   xDiff = p1x - p2x
   yDiff = p1y - p2y
+
   if (radiusSum > Math.sqrt(xDiff * xDiff + yDiff * yDiff)) {
     return true
   } else {
@@ -203,6 +217,7 @@ function DrawLifeShips() {
     [-9, 9],
   ]
   ctx.strokeStyle = 'white'
+
   for (let i = 0; i < lives; i++) {
     ctx.beginPath()
     ctx.moveTo(startx, starty)
@@ -228,14 +243,33 @@ function Render() {
   }
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+  // display score
   ctx.fillStyle = 'white'
   ctx.font = '21px Arial'
   ctx.fillText('Score: ' + score.toString(), 20, 35)
+
+  // If no lives signal game over
   if (lives <= 0) {
+    document.body.removeEventListener('keydown', HandleKeyDown)
+    document.body.removeEventListener('keyup', HandleKeyUp)
+
     ship.visible = false
     ctx.fillStyle = 'white'
     ctx.font = '50px Arial'
     ctx.fillText('GAME OVER', canvasWidth / 2 - 150, canvasHeight / 2)
+  }
+
+  // create a new level and increases asteroid speed
+  if (asteroids.length === 0) {
+    ship.x = canvasWidth / 2
+    ship.y = canvasHeight / 2
+    ship.velX = 0
+    ship.velY = 0
+    for (let i = 0; i < 8; i++) {
+      let asteroid = new Asteroid()
+      asteroid.speed += 0.5
+      asteroids.push(asteroid)
+    }
   }
 
   DrawLifeShips()
@@ -249,7 +283,7 @@ function Render() {
           11,
           asteroids[k].x,
           asteroids[k].y,
-          asteroids[k].radius
+          asteroids[k].collisionRadius
         )
       ) {
         ship.x = canvasWidth / 2
@@ -260,7 +294,7 @@ function Render() {
       }
     }
   }
-
+  // check collision between bullets and asteroids
   if (asteroids.length !== 0 && bullets.length !== 0) {
     loop1: for (let l = 0; l < asteroids.length; l++) {
       for (let m = 0; m < bullets.length; m++) {
@@ -271,9 +305,10 @@ function Render() {
             3,
             asteroids[l].x,
             asteroids[l].y,
-            asteroids[l].radius
+            asteroids[l].collisionRadius
           )
         ) {
+          // check if asteroid is big enough to split into 2 smaller ones
           if (asteroids[l].level === 1) {
             asteroids.push(
               new Asteroid(asteroids[l].x - 5, asteroids[l].y - 5, 25, 2, 22)
@@ -317,5 +352,12 @@ function Render() {
       asteroids[j].Draw(j)
     }
   }
+
+  // update the high score using local storage
+  highScore = Math.max(highScore, score)
+  localStorage.setItem(localStorageName, highScore)
+  ctx.font = '21px Arial'
+  ctx.fillText('High Score: ' + highScore.toString(), 20, 70)
+
   requestAnimationFrame(Render)
 }
